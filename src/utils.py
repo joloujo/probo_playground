@@ -5,8 +5,8 @@ There is nothing you need to edit or fill in within this file, but feel free to 
 """
 
 from dataclasses import dataclass
-import random
-
+from math import pow, sqrt, atan2
+from typing import TypedDict
 
 @dataclass(unsafe_hash=True)
 class Position:
@@ -31,6 +31,26 @@ class Position:
         Return in string format.
         """
         return f"X{self.x}Y{self.y}"
+    
+    def __add__(self, other: 'Position') -> 'Position':
+        """
+        Add one position to another
+        """
+        return Position(self.x + other.x, self.y + other.y)
+    
+    def __sub__(self, other: 'Position') -> 'Position':
+        """
+        Subtract one position from another
+        """
+        return Position(self.x - other.x, self.y - other.y)
+    
+    @property
+    def magnitude(self) -> float:
+        return sqrt(pow(self.x, 2) + pow(self.y, 2))
+    
+    @property
+    def angle(self) -> float:
+        return atan2(self.y, self.x)
 
 
 @dataclass(unsafe_hash=True)
@@ -86,6 +106,32 @@ class Bounds:
         Check if an xy coordinate is within the bounds (inclusive).
         """
         return self.within_x(pos.x) and self.within_y(pos.y)
+    
+    def raycast(self, ray_start: Position, ray_end: Position) -> Position | None:
+        """
+        Docstring for raycast
+        
+        Args:
+            ray_start: Description
+            ray_end: Description
+        Returns:
+            The position of the first intersection between the ray and the edges of the Bounds, or None if there is no intersection
+        """
+
+        # TODO: Finish implementing
+        edges: list[tuple[Position, Position]] = [
+            (Position(self.x_min, self.y_min), Position(self.x_min, self.y_max)), # (min, min) -> (min, max)
+            (Position(self.x_min, self.y_min), Position(self.x_max, self.y_min)), # (min, min) -> (max, min)
+            (Position(self.x_min, self.y_max), Position(self.x_max, self.y_max)), # (min, max) -> (max, max)
+            (Position(self.x_max, self.y_min), Position(self.x_max, self.y_max)), # (max, min) -> (max, max)
+        ]
+
+        collisions: list[Position] = []
+
+        for edge in edges:
+            pass
+            
+
 
     def to_dict(self):
         """
@@ -155,3 +201,8 @@ class BearingRange:
         Return in string format.
         """
         return f"LM{self.landmark_id}B{self.bearing}R{self.range}"
+
+class State(TypedDict):
+    time: float
+    robot_pose: Pose
+    landmark_br: list[BearingRange]

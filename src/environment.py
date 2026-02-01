@@ -6,8 +6,9 @@ The Environment class models the world that the robots navigate in. The world is
 Critically, the environment tracks the robot's state. In this case, the robot's state is a vector that includes three state variables: x position, y position, and heading.
 """
 
-from utils import Position, Pose, Bounds, Landmark, BearingRange
-
+from math import pi
+from utils import Position, Pose, Bounds, Landmark, BearingRange, State
+import pandas as pd
 
 class Environment:
     """
@@ -28,7 +29,7 @@ class Environment:
         obstacles: list[Bounds],
         landmarks: list[Landmark],
         robot_starting_pose: Pose,
-    ):
+    ) -> None:
         """
         Initialize an instance of the Environment class.
 
@@ -39,23 +40,18 @@ class Environment:
             landmarks: a list of landmarks
             robot_starting_pose: the initial position and heading of the robot
         """
-        # TODO: set the dimensions property to the parameter value
-        self.DIMENSIONS = None
+        self.DIMENSIONS = dimensions
 
-        # TODO: set the timestep size property to the parameter value
-        self.DT = None
+        self.DT = dt
 
-        # TODO: set the current time to zero
-        self.time = None
+        self.time: float = 0
 
-        # TODO: set the obstacles and landmarks properties to the parameter lists
-        self.OBSTACLES = None
-        self.LANDMARKS = None
+        self.OBSTACLES = obstacles
+        self.LANDMARKS = landmarks
 
-        # TODO: set the robot pose property to the parameter value
-        self.robot_pose = None
+        self.robot_pose = robot_starting_pose
 
-    def robot_step(self, dx: float, dy: float, dtheta: float):
+    def robot_step(self, dx: float, dy: float, dtheta: float) -> None:
         """
         Update the robot's position and heading in the world. The robot should not be able to pass through obstacles or outside of the world bounds.
 
@@ -67,10 +63,19 @@ class Environment:
         Returns:
             Nothing, but update the robot_pose property at the end
         """
-        # TODO: fill in the function
-        pass
 
-    def is_valid_motion(self, dx: float, dy: float):
+        # Get the x and y motion that the robot can validly make
+        valid_dx, valid_dy = self.validate_xy_motion(dx, dy)
+
+        # Update the robot's position and orientation
+        self.robot_pose.pos += Position(valid_dx, valid_dy)
+        self.robot_pose.theta += dtheta
+
+        # Update the simulator timestep
+        self.time += self.DT
+
+
+    def validate_xy_motion(self, dx: float, dy: float) -> tuple[float, float]:
         """
         Given attempted x and y motion by the robot, determine what motion is physically possible (i.e. doesn't go through any obstacles or barriers). Return the actual motion that will be executed.
 
@@ -82,10 +87,17 @@ class Environment:
             dx: change in x position that should be executed
             dy: change in y position that should be executed
         """
-        # TODO: fill in the function
-        pass
+        
+        # TODO: Implement this with ray tracing for more accurate simulation
 
-    def is_valid_position(self, position: Position):
+        # # Loop through all things that stop motion
+        # for bound in [self.DIMENSIONS] + self.OBSTACLES:
+
+        return (dx, dy) \
+            if self.is_valid_position(self.robot_pose.pos + Position(dx, dy)) \
+            else (0, 0)
+
+    def is_valid_position(self, position: Position) -> bool:
         """
         Check if a given robot position is valid; i.e. not out-of-bounds or within an obstacle. Return a boolean representing whether or not this condition is true.
 
@@ -95,33 +107,55 @@ class Environment:
         Returns:
             true if the position is valid and false otherwise
         """
-        # TODO: fill in the function
-        pass
+        
+        # Check if the position is out of the environment bounds
+        if not self.DIMENSIONS.within_bounds(position):
+            return False
+
+        # For each obstacle, check if the position is in it
+        for obstacle in self.OBSTACLES:
+            if obstacle.within_bounds(position):
+                return False
+
+        # If the position is not outside the environment bounds and not in any obstacle bounds, then it is a valid position
+        return True
 
     def get_robot_pose(self):
         """
         Return the true robot pose.
         """
-        # TODO: fill in the function
-        pass
+        return self.robot_pose
 
-    def get_proximity_to_landmarks(self):
+    def get_proximity_to_landmarks(self) -> list[BearingRange]:
         """
         Return a list of the robot's true range and bearing to all landmarks.
         """
-        # TODO: fill in the function
-        pass
+        return [
+            BearingRange(
+                landmark_id=landmark.id,
+                range=(landmark.pos - self.robot_pose.pos).magnitude,
+                bearing=(((landmark.pos - self.robot_pose.pos).angle - self.robot_pose.theta) + pi) % (2 * pi) - pi,
+            ) for landmark in self.LANDMARKS
+        ] 
 
     def take_state_snapshot(self):
         """
         Return true state information about this timestep, including time, robot position, and the robot's bearing/range to landmarks, in a table format.
         """
-        # TODO: fill in the function
-        pass
+        state: State = {
+            'time': self.time,
+            'robot_pose': self.robot_pose,
+            'landmark_br': self.get_proximity_to_landmarks(),
+        }
+        return pd.DataFrame(state)
 
     def get_environment_info(self):
         """
         Return static information about the environment, including dimensions, timestep size, locations and dimensions of obstacles, and locations of landmarks.
         """
-        # TODO: fill in the function
-        pass
+        return {
+            'dimensions': self.DIMENSIONS,
+            'dt': self.DT,
+            'obstacles': self.OBSTACLES,
+            'landmarks': self.LANDMARKS,
+        }
