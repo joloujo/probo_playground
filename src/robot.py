@@ -6,8 +6,9 @@ The Robot class models the robotic agent that explores the world. The robot is r
 
 from environment import Environment
 from math import sin, cos
+import pandas as pd
 from random import gauss
-from sensors import SensorInterface
+from sensors import SensorInterface, WheelEncoder, LandmarkPinger
 
 
 class Robot:
@@ -33,7 +34,16 @@ class Robot:
         self.lin_vel_noise = lin_vel_noise
         self.ang_vel_noise = ang_vel_noise
 
-        self.sensors = []
+        self.cmd_lin_vel: float = 0
+        self.cmd_ang_vel: float = 0
+
+        self.actual_lin_vel: float = 0
+        self.actual_ang_vel: float = 0
+
+        self.sensors: list[SensorInterface] = [
+            WheelEncoder(self),
+            LandmarkPinger(self),
+        ]
 
     def robot_step_differential(self, lin_vel: float, ang_vel: float) -> tuple[float, float, float]:
         """
@@ -49,8 +59,14 @@ class Robot:
             d-theta: change in heading
         """
 
+        self.cmd_lin_vel = lin_vel
+        self.cmd_ang_vel = ang_vel
+
         noisy_lin_vel = gauss(lin_vel, lin_vel * self.lin_vel_noise)
         noisy_ang_vel = gauss(ang_vel, ang_vel * self.ang_vel_noise)
+
+        self.actual_lin_vel = noisy_lin_vel
+        self.actual_ang_vel = noisy_ang_vel
 
         if noisy_ang_vel == 0: 
             return (
@@ -92,5 +108,13 @@ class Robot:
         """
         Return noisy sensor readings of the environment at this timestep, including data from all sensors, in a table format.
         """
-        # TODO: fill in the function
-        pass
+        
+        samples = {
+            sensor.name: [sensor.sample()]
+            for sensor in self.sensors
+            if self.env.time >= sensor.last_meas_t + sensor.interval 
+        }
+
+        return pd.DataFrame(samples)
+
+

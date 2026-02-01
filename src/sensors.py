@@ -10,6 +10,12 @@ Proprioceptive sensors measure the robot's relationship to its past states. This
 
 from abc import ABC, abstractmethod
 from math import pi
+from random import gauss
+from typing import Any, TYPE_CHECKING
+from utils import BearingRange
+
+if TYPE_CHECKING:
+    from robot import Robot
 
 
 class SensorInterface(ABC):
@@ -23,7 +29,7 @@ class SensorInterface(ABC):
         last_meas_t: time of last sensor measurement
     """
 
-    def __init__(self, name: str, robot, interval: float):
+    def __init__(self, name: str, robot: 'Robot', interval: float):
         """
         Initialize a sensor class instace.
 
@@ -66,7 +72,7 @@ class SensorInterface(ABC):
         self._last_meas_t = value
 
     @abstractmethod
-    def sample(self):
+    def sample(self) -> Any:
         """
         Sample the environment and return the noisy measurement(s).
         """
@@ -102,20 +108,28 @@ class WheelEncoder(SensorInterface):
             robot: reference robot
             name: reference identifier
             interval: period between measurements
-            linear_noise_ratio: proportional noise for linear velocity
-            angular_noise_ratio: proportional noise for angular
+            linear_noise: absolute noise for linear velocity
+            angular_noise: absolute noise for angular
         """
         super().__init__(name, robot, interval)
         # TODO: save all noise constants as properties
-        self.LIN_NOISE = None  # m/s
-        self.ANG_NOISE = None  # rad/s
+        self.LIN_NOISE = lin_noise  # m/s
+        self.ANG_NOISE = ang_noise # rad/s
 
-    def sample(self):
+    def sample(self) -> tuple[float, float]:
         """
         Sample the robot's linear and angular velocity.
         """
-        # TODO: fill in the function
-        pass
+        # Get the most recent angular and linear velocities
+        lin_vel = self.robot.actual_lin_vel
+        ang_vel = self.robot.actual_ang_vel
+
+        self.last_meas_t = self.robot.env.time
+
+        return (
+            gauss(lin_vel, self.LIN_NOISE),
+            gauss(ang_vel, self.ANG_NOISE)
+        )
 
 
 class LandmarkPinger(SensorInterface):
@@ -152,14 +166,38 @@ class LandmarkPinger(SensorInterface):
         """
         super().__init__(name, robot, interval)
         # TODO: save max range and all noise constants as properties
-        self.MAX_RANGE = None  # meters
-        self.RANGE_NOISE = None  # meters
-        self.RANGE_PROP_NOISE = None
-        self.BEARING_NOISE = None  # radians
+        self.MAX_RANGE = max_range  # meters
+        self.RANGE_NOISE = range_noise  # meters
+        self.RANGE_PROP_NOISE = range_prop_noise
+        self.BEARING_NOISE = bearing_noise  # radians
 
     def sample(self):
         """
         Reports noisy measurements of the bearing and range between the robot and all nearby landmarks.
         """
-        # TODO: fill in the function
-        pass
+        ground_truth_readings = self.robot.env.get_proximity_to_landmarks()
+
+        noisy_readings: list[BearingRange] = []
+
+        for reading in ground_truth_readings:
+            noisy_range = gauss(reading.range, reading.range * self.RANGE_PROP_NOISE + self.RANGE_NOISE)
+
+            if noisy_range > self.MAX_RANGE:
+                noisy_readings.append(
+                    BearingRange(reading.landmark_id, float('inf'), float('inf'))
+                )
+
+            else:
+                noisy_bearing = gauss(reading.bearing, self.BEARING_NOISE)
+
+                noisy_readings.append(
+                    BearingRange(
+                        landmark_id = reading.landmark_id, 
+                        bearing = noisy_bearing,
+                        range = noisy_range,
+                    )
+                )
+
+        self.last_meas_t = self.robot.env.time
+        
+        return noisy_readings

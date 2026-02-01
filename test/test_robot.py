@@ -33,3 +33,12 @@ class TestRobot:
         robot.env.robot_step(0, 0, pi/2)
 
         assert robot.robot_step_differential(1, -pi/2) == pytest.approx((2/pi, 2/pi, -pi/2))
+
+    def test_take_sensor_measurements(self, robot: Robot):
+        # Make sure measurements are not taken if the required interval has not passed
+        assert set(robot.take_sensor_measurements().columns) == set()
+
+        robot.env.time += 10
+
+        # Make sure measurements are gathered when enough time has passed
+        assert set(robot.take_sensor_measurements().columns) == {'wheel_encoder', 'landmark_pinger'}
