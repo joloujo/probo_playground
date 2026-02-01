@@ -5,6 +5,8 @@ The Robot class models the robotic agent that explores the world. The robot is r
 """
 
 from environment import Environment
+from math import sin, cos
+from random import gauss
 from sensors import SensorInterface
 
 
@@ -17,19 +19,23 @@ class Robot:
         sensors: list of all robot sensors
     """
 
-    def __init__(self, env: Environment):
+    def __init__(self, env: Environment, lin_vel_noise: float = 0, ang_vel_noise: float = 0):
         """
         Initialize an instance of the Robot class.
 
         Args:
             env: the environment this robot is operating in
+            lin_vel_noise: the proportion of the command linear velocity to use for the standard deviation of the gaussian noise applied to the command linear velocity 
+            ang_vel_noise: the proportion of the command angular velocity to use for the standard deviation of the gaussian noise applied to the command angular velocity 
         """
-        # TODO: set the environment property to the parameter value
-        self.env = None
-        # TODO: initialize the sensors property as an empty list
+        self.env = env
+
+        self.lin_vel_noise = lin_vel_noise
+        self.ang_vel_noise = ang_vel_noise
+
         self.sensors = []
 
-    def robot_step_differential(self, lin_vel: float, ang_vel: float):
+    def robot_step_differential(self, lin_vel: float, ang_vel: float) -> tuple[float, float, float]:
         """
         Differential-drive mode. Given forward linear and angular velocities, determine the robot's change in x, y, and heading and apply those changes in the environment.
 
@@ -42,8 +48,28 @@ class Robot:
             dy: change in y position
             d-theta: change in heading
         """
-        # TODO: fill in the function
-        pass
+
+        noisy_lin_vel = gauss(lin_vel, lin_vel * self.lin_vel_noise)
+        noisy_ang_vel = gauss(ang_vel, ang_vel * self.ang_vel_noise)
+
+        if noisy_ang_vel == 0: 
+            return (
+                noisy_lin_vel * cos(self.env.robot_pose.theta),
+                noisy_lin_vel * sin(self.env.robot_pose.theta),
+                0
+            )
+        elif noisy_lin_vel == 0: # Not strictly necessary, but should improve performance slightly
+            return (
+                0,
+                0,
+                noisy_ang_vel * self.env.DT
+            )
+        else:
+            return (
+                (noisy_lin_vel / noisy_ang_vel) * (sin(self.env.robot_pose.theta + noisy_ang_vel * self.env.DT) - sin(self.env.robot_pose.theta)),
+                -(noisy_lin_vel / noisy_ang_vel) * (cos(self.env.robot_pose.theta + noisy_ang_vel * self.env.DT) - cos(self.env.robot_pose.theta)),
+                noisy_ang_vel * self.env.DT
+            )
 
     def robot_step_translational(self, x_vel: float, y_vel: float, ang_vel: float):
         """
