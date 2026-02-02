@@ -203,6 +203,6 @@ class BearingRange:
         return f"LM{self.landmark_id}B{self.bearing}R{self.range}"
 
 class State(TypedDict):
-    time: float
-    robot_pose: Pose
-    landmark_br: list[BearingRange]
+    time: list[float]
+    robot_pose: list[Pose]
+    landmark_br: list[list[BearingRange]]

@@ -70,8 +70,8 @@ class Robot:
 
         if noisy_ang_vel == 0: 
             return (
-                noisy_lin_vel * cos(self.env.robot_pose.theta),
-                noisy_lin_vel * sin(self.env.robot_pose.theta),
+                noisy_lin_vel * cos(self.env.robot_pose.theta) * self.env.DT,
+                noisy_lin_vel * sin(self.env.robot_pose.theta) * self.env.DT,
                 0
             )
         elif noisy_lin_vel == 0: # Not strictly necessary, but should improve performance slightly

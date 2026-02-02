@@ -143,9 +143,9 @@ class Environment:
         Return true state information about this timestep, including time, robot position, and the robot's bearing/range to landmarks, in a table format.
         """
         state: State = {
-            'time': self.time,
-            'robot_pose': self.robot_pose,
-            'landmark_br': self.get_proximity_to_landmarks(),
+            'time': [self.time],
+            'robot_pose': [self.robot_pose],
+            'landmark_br': [self.get_proximity_to_landmarks()],
         }
         return pd.DataFrame(state)
 
