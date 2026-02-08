@@ -172,7 +172,7 @@ Now you have all the pieces necessary to run the Kalman Filter alongside your si
 
 > File: `src/main.py`
 
-Just like the prediction step, we will call `KalmanFilter.update()` in the main simulator loop. After `Robot.take_sensor_measurements()`, determine which exteroceptive sensors (if any) have returned observations, and perform an update for each. In the current case, this means calling `KalmanFilte.update()` each time a new GPS observation arrives. Also, be sure to log the Kalman Filter's estimated state vector after the update step instead of after the prediction step!
+Just like the prediction step, we will call `KalmanFilter.update()` in the main simulator loop. After `Robot.take_sensor_measurements()`, determine which exteroceptive sensors (if any) have returned observations, and perform an update for each. In the current case, this means calling `KalmanFilter.update()` each time a new GPS observation arrives. Also, be sure to log the Kalman Filter's estimated state vector after the update step instead of after the prediction step!
 
 Now when you plot the results of the filter compared to the ground truth, you should see that the Kalman Filter's estimated trajectory is much closer to reality! Generally speaking, in Kalman Filtering, uncertainty grows in the prediction step and shrinks during the update step. Following this, it makes sense that our unbounded error accumulation has been corrected now that we are encorporating updates.
 
