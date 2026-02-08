@@ -121,7 +121,7 @@ Now that we're modeling our state and state uncertainty properly, we'll need to 
 
 `self.B` is more interesting. One way to think about this matrix is that it should convert the control input vector to a vector describing the change in value for each state variable:
 
-$$[\Delta x,\Delta y, \Delta \theta] = \Beta * [v_x, v_y, \omega]$$
+$$[\Delta x,\Delta y, \Delta \theta] = B * [v_x, v_y, \omega]$$
 
 In practice, this will look like a diagonal matrix scaled by the unit timestep `dt`. This strategy employs Euler's Method to approximate small changes in each state variable using the value of control input variables when they represent derivatives of those state variables.
 
@@ -133,9 +133,9 @@ In practice, this will look like a diagonal matrix scaled by the unit timestep `
 
 Let's refamiliarize ourselves with the equations of the prediction step:
 
-$$x_{t+1}=F*x_t+B*u_t$$
+$$x_{t+1} = F * x_t + B * u_t$$
 
-$$P=F*P*F^T+Q$$
+$$P = F * P * F^T + Q$$
 
 The final attribute to initialize is Q, the process noise, which is essentially a catch-all noise model to acknowledge that the world doesn't operate as perfectly as the state transition might make it seem. Wind, wheel slippage, and other unmeasurable disturbances are all represented here. The simplest way to initialize Q is as a white noise/Gaussian distribution. We have done this for you in the `get_Q()` function. Take some time to try out different values for the standard deviation parameter and see how that affects the noise!
 
@@ -165,23 +165,23 @@ You'll likely see that the Kalman Filter's estimated trajectory isn't perfect, a
 
 Let's refamiliarize ourselves with key values of the update step:
 
-$$S=H*P*H^T+R$$ 
+$$S = H * P * H^T + R$$ 
 
 Represents the total uncertainty, where the process model P is propagated through the measurement model H to put it in the same units as the measurement noise R.
 
-$$K=P*H^T*S^{-1}$$ 
+$$K = P * H^T * S^{-1}$$ 
 
 Is the Kalman Gain, AKA percentage of total uncertainty that is from the estimator, not the measurement.
 
-$$y = z - H*x$$ 
+$$y = z - H * x$$ 
 
 Is the residual, AKA error between observation and expected observation given current state estimate.
 
 And here are the equations of the upate step:
 
-$$x_{t+1}=x_{t} + K*y$$
+$$x_{t+1} = x_{t} + K * y$$
 
-$$P_{t+1}=P-K*H*P$$
+$$P_{t+1} = P - K * H * P$$
 
 You'll notice that `update()` already expects the following parameters:
 - $z$: an observation, AKA a measurement taken by an exteroceptive sensor
