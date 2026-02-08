@@ -48,6 +48,10 @@ class KalmanFilter:
         # TODO: define the control model
         self.B: np.ndarray = None
 
+        # TODO: define the process noise
+        self.Q: np.ndarray = None
+
+
     def predict(self, u: np.ndarray):
         """
         Predicts the next state vector and its covariance matrix using the state transition matrix and an input control vector. The Kalman Filter uses the following predict equations:
@@ -81,6 +85,7 @@ class KalmanFilter:
         Args:
             z: the given observation, AKA a measurement taken of the environment
             H: the measurement model, which relates the state space to the measurement space
+            R: the measurement noise model (covariance)
         """
         # TODO: calculate the total uncertainty in the system
         S = None
