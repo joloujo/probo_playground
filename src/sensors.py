@@ -163,3 +163,52 @@ class LandmarkPinger(SensorInterface):
         """
         # TODO: fill in the function
         pass
+
+
+class GPS(SensorInterface):
+    """
+    This class represents a GPS sensor that measures the position of the robot in 2D space.
+
+    Attributes:
+        name (str): string identifier
+        robot (Robot): reference robot
+        interval (float): period between measurements
+        last_meas_t (float): time of last measurement
+        X_NOISE (float): absolute noise for x stdev
+        Y_NOISE (float): absolute noise for y stdev
+    """
+
+    def __init__(
+        self,
+        robot,
+        name,
+        interval,
+        x_noise,
+        y_noise,
+    ):
+        """
+        Initialize an instance of the GPS class.
+
+        Args:
+            name (str): reference identifier
+            robot (Robot): reference robot
+            interval (float): period between measurements
+            x_noise (float): absolute noise for x stdev
+            y_noise (float): absolute noise for y stdev
+        """
+        super().__init__(name, robot, interval)
+        self.X_NOISE = x_noise
+        self.Y_NOISE = y_noise
+
+        # TODO: fill in the measurement model
+        self.H = None
+
+        # TODO: fill in the noise model
+        self.R = None
+
+    def sample(self):
+        """
+        Take a noisy GPS measurement of robot position.
+        """
+        # TODO: fill in the function
+        pass
