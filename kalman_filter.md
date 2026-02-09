@@ -4,28 +4,50 @@
 
 ### 0.1 Welcome to Kalman Filtering!
 
-This assignment has two goals: 1, help you practice and understand the fundamental math behind Kalman Filters, and 2, connect that math to a real-world state estimation scenario represented in our existing simulator. As you work through the assignment, keep both goals in mind, and try to reinforce both! If you find yourself struggling to understand what the math equations mean, or are struggling to translate those equations into code, there are resources listed below to support your learning.
+This assignment has two goals: (1) help you practice and understand the fundamental math behind Kalman Filters, and (2) connect that math to a real-world state estimation scenario represented in our existing simulator. As you work through the assignment, keep both goals in mind, and try to reinforce both! If you find yourself struggling to understand what the math equations mean, or are struggling to translate those equations into code, there are resources listed below to support your learning.
+
+The overall structure of this assignment follows:
+* **Simulator Extensions**: Add a linear control schema for the robot (if not already implemented in the first assignment), and add a "GPS" sensor for this robot
+* **Week 1: Linear (Regular) Kalman Filter**
+    * Implementing the Prediction Step
+    * Implementing the Update Step
+* **Week 2: Extended Kalman Filter**
+    * Implementing the Prediction Step
+    * Implementing the Update Step
+    * Implementation Comparisons
 
 ### 0.2 Kalman Filtering vs Extended Kalman Filtering
 
+The Kalman Filter takes the following standard form:
+
+$$x_k = F_kx_{k-1} + B_ku_k + w_k$$
+
+$$z_k = H_kx_k + v_k$$
+
+where $F_k$ is the state transition model capturing the transition from the previous state $x_{k-1}$ to the current state $x_k$; $B_k$ is the control-input model applied to the control vector $u_k$; w_k is _process_ noise with covariance $Q_k$; $z_k$ is a modeled measurement, $H_k$ is the observation model that maps true state space to observations, $v_k$ is the _observation_ noise with covariance $R_k$.
+
+
 As we've discussed in class, Kalman Filters make two key assumptions. We are going to briefly discuss one of them, because it relates directly to our implementation: To use a Kalman Filter, the dynamics of the system we're estimating must be linear.
 
-This can be tricky to understand at first. Essentially, the Kalman Filter algorithm relies heavily on linear algebra to generalize its computations. When we mathematically describe the relationship between different variables that affect each other, we'd like that relationship to be linear so we can compute it using matrix math.
+This can be tricky to understand at first. Essentially, the Kalman Filter algorithm relies heavily on linear algebra to generalize its computations. When we mathematically describe the relationship between different variables that affect each other, we'd like that relationship to be linear, so we can compute it using matrix math.
 
-One example is the relationship between the state space and the control input space. If our state vector tracks position, and our control input is velocity, this relationship is easily linearized with Euler's Method:
+One example is the relationship between the state space and the control input (action) space. If our state vector tracks position, and our control input is velocity, this relationship is easily linearized with Euler's Method:
 
-$x_{t+1}=x_t + v_t*dt$
+$$x_{t+1}=x_t + v_t*dt$$
 
 This equation could be simply slotted into the state transition matrix (F) and used to calculate predictions. However, if the relationship between state space and control space is not linear, we will have to linearize it to take advantage of the Kalman Filter's efficient algorithm.
 
 Another example is the relationship between the state space and the observation space. A GPS sensor might observe the robot's position, which naturally has a linear relationship with the state vector since it tracks the same value. That relationship is easily slotted into the measurement model matrix (H). However, a camera that determines the robot's position relative to a known landmark is observing variables (specifically, bearing and range) that have a nonlinear relationship with the robot's position:
 
-$r = \sqrt{(x - l_x)^2 + (y - l_y)^2}$ \
-$\phi = tan^{-1}([y - l_y] / [x - l_x]) - \theta$
+$$r = \sqrt{(x - l_x)^2 + (y - l_y)^2}$$ 
+
+$$\phi = tan^{-1}([y - l_y] / [x - l_x]) - \theta$$
 
 In this case, H would need to be linearized.
 
-Anything involving linearization becomes an Extended Kalman Filter (EKF). For the first half of the assignment, which we recommend spending one week on, the walkthrough will focus on developing a regular Kalman Filter for our simulator. The second half of the assignment will focus on adding linearization to the estimator, making it an Extended Kalman Filter.
+Anything involving linearization becomes an Extended Kalman Filter (EKF).
+
+> For the first half of the assignment, which we recommend spending one week on, the walkthrough will focus on developing a regular Kalman Filter for our simulator. The second half of the assignment will focus on adding linearization to the estimator, making it an Extended Kalman Filter.
 
 ### 0.3 Resources for Understanding Kalman Filters
 
@@ -43,19 +65,19 @@ Beyond the in-class lectures, here are a few additional resources you can use as
 
 We briefly discussed linearity in some toy examples, but let's consider the scenario that we actually built in our simulator. First, here is our state vector:
 
-$x = [x, y, \theta]$
+$$x = [x, y, \theta]$$
 
-We'll need to determine if our state space has a linear relationship to our control input space. This depends on whether or not you chose to implement `robot_step_translational()` or `robot_step_differential()`. For the first method, our control input vector looks like this:
+We'll need to determine if our state space has a linear relationship to our control input space. This depends on whether or not you chose to implement `robot_step_translational()` or `robot_step_differential()`. For `robot_step_translational()`, our control input vector looks like this:
 
-$u = [v_x, v_y, \omega]$
+$$u = [v_x, v_y, \omega]$$
 
-Since the control input vector only contains derivatives of state vectors, this relationship is linear by Euler's Method! However, the second method is a different story:
+Since the control input vector only contains derivatives of state vectors, this relationship is linear by Euler's Method! However, the second method, `robot_step_differential()` is a different story:
 
-$u = [v, \omega]$
+$$u = [v, \omega]$$
 
 This control vector has variables with a nonlinear relationship to the state vector's variables. As such, if we were trying to estimate the state of a robot with this type of drive, we would need an Extended Kalman Filter.
 
-If you chose to implement `robot_step_translational()`, go ahead and skip this step. If not, go back and add it to your `src/robot.py` file! Either way, don't delete your `robot_step_differential()` function if you have it -- we'll use that mode for the Extended Kalman Filter. Make sure that your `WheelEncoder` sensor class matches the translational mode as well.
+**Implementation Action:** If you chose to implement `robot_step_translational()`, go ahead and skip this step. If not, go back and add it to your `src/robot.py` file! Either way, don't delete your `robot_step_differential()` function if you have it -- we'll use that mode for the Extended Kalman Filter. Make sure that your `WheelEncoder` sensor class matches the translational mode as well.
 
 > Coding tip: Reference code for this function is available on the `main` branch, if you'd like to get to the Kalman Filter code more quickly.
 
@@ -65,11 +87,11 @@ If you chose to implement `robot_step_translational()`, go ahead and skip this s
 
 We also need to examine the relationship between our state space and our measurement space. Currently, the only exteroceptive sensor we have is the landmark pinger (remember that our wheel encoders are supplying our control input info for the prediction step, not observations for the update step!). Landmark pinger observations look like this:
 
-z = [r, $\phi$]
+$$z = [r, \phi]$$
 
 Like we showed before, these variables have a nonlinear relationship to our state space variables. When we implement the Extended Kalman Filter, we'll use these measurements, but for now, we are going to add in a new sensor whose observations are easier to linearly relate to our state space.
 
-Let's add a GPS sensor to `src/sensors.py`. Like the other sensor classes, your new `GPS` class should have the following features:
+**Implementation Action:** Let's add a GPS sensor to `src/sensors.py`. Like the other sensor classes, your new `GPS` class should have the following features:
 - Inherits from `SensorInterface`
 - `__init__()` function with a name, reference robot, and interval
 - Noise constants for each observed state (x position and y position)
@@ -99,9 +121,11 @@ Now that we're modeling our state and state uncertainty properly, we'll need to 
 
 `self.B` is more interesting. One way to think about this matrix is that it should convert the control input vector to a vector describing the change in value for each state variable:
 
-$[\Delta x,\Delta y, \Delta \theta] = \Beta * [v_x, v_y, \omega]$
+$$[\Delta x,\Delta y, \Delta \theta] = B * [v_x, v_y, \omega]$$
 
 In practice, this will look like a diagonal matrix scaled by the unit timestep `dt`. This strategy employs Euler's Method to approximate small changes in each state variable using the value of control input variables when they represent derivatives of those state variables.
+
+**Implementation Action**: Fill in the initialization function for the Kalman filter class for attributes `self.F`, `self.P`, and `self.B`.
 
 > Coding tip: There is a new function `wrap_angle()` in `src/utils.py`. You should use this each time you update the robot's heading, to prevent accumulating non-normalized angle values that might cause calculation errors later on.
 
@@ -109,15 +133,17 @@ In practice, this will look like a diagonal matrix scaled by the unit timestep `
 
 Let's refamiliarize ourselves with the equations of the prediction step:
 
-$x_{t+1}=F*x_t+B*u_t$
+$$x_{t+1} = F * x_t + B * u_t$$
 
-$P=F*P*F^T+Q$
+$$P = F * P * F^T + Q$$
 
 The final attribute to initialize is Q, the process noise, which is essentially a catch-all noise model to acknowledge that the world doesn't operate as perfectly as the state transition might make it seem. Wind, wheel slippage, and other unmeasurable disturbances are all represented here. The simplest way to initialize Q is as a white noise/Gaussian distribution. We have done this for you in the `get_Q()` function. Take some time to try out different values for the standard deviation parameter and see how that affects the noise!
 
-Tuning the Q parameter is a finnicky part of Kalman Filtering -- too little noise, and your filter is blindsided by natural disturbances in the world. Too much noise, and your filter is unable to parse out good estimates. One alternate method of defining Q is by basing it on known noise in your velocity commands. To learn more about this technique, check out Chapter 11 of the RLabbe Kalman Filtering textbook!
+Tuning the Q parameter is a finnicky part of Kalman Filtering -- too little noise, and your filter is blindsided by natural disturbances in the world. Too much noise, and your filter is unable to parse out good estimates. One alternate method of defining Q is by basing it on known noise in your velocity commands. To learn more about this technique, check out [Chapter 11 of the RLabbe Kalman Filtering textbook](https://github.com/rlabbe/Kalman-and-Bayesian-Filters-in-Python/blob/master/11-Extended-Kalman-Filters.ipynb)!
 
 Now that we've set up all of our matrices, this is just a matter of recreating the equations in the `predict()` function. Go ahead and do this now!
+
+**Implementation Action**: Fill in the `self.Q` attribute in the initialization function, and implement the `predict()` function.
 
 ### 2.3 Demonstrating The Prediction Step
 
@@ -126,6 +152,8 @@ Now that we've set up all of our matrices, this is just a matter of recreating t
 Last week, you got your simulator to the point of generating ground truth data and noisy sensor data, and you hopefully created some visualization code to plot that data after the fact (if not, this is a good time to go back and add some visualizer code!). Now that we've put the prediction step together, we can run our estimator along with the simulator and see what trajectory it predicts!
 
 To do this, navigate to your main file and initialize a new instance of the `KalmanFilter` class with parameters that match whatever you passed your `Environment` class. Then, in your main simulator loop, you'll want to call your new `KalmanFilter.predict()` function immediately after calling `Robot.take_sensor_measurements()`. In our case, the control input vector comes from the robot's wheel encoder readings. Next, save the resultant state estimates at each timestep and plot them alongside your plot of the ground truth trajectory to see how your Kalman Filter is performing!
+
+**Implementation Action**: Incorporate your Kalman filter into `main.py` and adding logging/visualization peripherals for examining the utility of your filter.
 
 You'll likely see that the Kalman Filter's estimated trajectory isn't perfect, and is likely even accumulating error over time. This is because we're effectively just doing dead reckoning right now -- using proprioceptive sensor knowledge only to figure out where the robot is. With no corrective updates from exteroceptive sensors, the filter has no way of reducing its uncertainty. This is why we need the update step.
 
@@ -137,24 +165,30 @@ You'll likely see that the Kalman Filter's estimated trajectory isn't perfect, a
 
 Let's refamiliarize ourselves with key values of the update step:
 
-$S=H*P*H^T+R$ (total uncertainty, where the process model P is propagated through the measurement model H to put it in the same units as the measurement noise R)
+$$S = H * P * H^T + R$$ 
 
-$K=P*H^T*S^{-1}$ (Kalman Gain, AKA percentage of total uncertainty that is from the estimator, not the measurement)
+Represents the total uncertainty, where the process model P is propagated through the measurement model H to put it in the same units as the measurement noise R.
 
-$y = z - H*x$ (residual, AKA error between observation and expected observation given current state estimate)
+$$K = P * H^T * S^{-1}$$ 
+
+Is the Kalman Gain, AKA percentage of total uncertainty that is from the estimator, not the measurement.
+
+$$y = z - H * x$$ 
+
+Is the residual, AKA error between observation and expected observation given current state estimate.
 
 And here are the equations of the upate step:
 
-$x_{t+1}=x_{t} + K*y$
+$$x_{t+1} = x_{t} + K * y$$
 
-$P_{t+1}=P-K*H*P$
+$$P_{t+1} = P - K * H * P$$
 
 You'll notice that `update()` already expects the following parameters:
 - $z$: an observation, AKA a measurement taken by an exteroceptive sensor
 - $H$: the measurement model, describing the mathematical relationship between the state space and the sensor's measurement space
 - $R$: the measurement noise, AKA the covariance matrix associated with the observation
 
-You now have all the tools you need to implement the update step programatically.
+**Implementation Action**: Implement the `update()` function.
 
 ### 3.2 Taking Measurements From The Simulator
 
@@ -162,9 +196,11 @@ You now have all the tools you need to implement the update step programatically
 
 Just like with the predict step, we'll want to hook up this function to actual measurements taken by the robot's sensors in simulation. While the z parameter comes from taking samples, which the simulator can already do, we need to define the measurement model H and noise model R for any exteroceptive sensor informing our updates. Right now, this only includes our GPS sensor, but if you create other sensors in the future, keep this in mind!
 
-Let's head over to the GPS sensor and add initialize two new attributes in its `__init__()` function: H and R. R is simply a diagonal matrix containing the variance for each variable observed by the sensor. Note that our noise parameters represent standard deviation values -- you need to square them to calculate the variance!
+Let's head over to the GPS sensor and add two new attributes in its `__init__()` function: H and R. R is simply a diagonal matrix containing the variance for each variable observed by the sensor. Note that our noise parameters represent standard deviation values -- you need to square them to calculate the variance!
 
 The measurement model describes which state variables are directly observed by a sensor, and which are not. Mathematically, it is a matrix with one row per measurement variable and one column per state variable. In the case of the GPS sensor, there are two measurement variables (x position, y position) and three state variables (x position, y position, heading). Each row should contain a 1 in the space of the state variable corresponding to the row's measurement variable, and a zero otherwise.
+
+**Implementation Action**: Add attributes `self.H` and `self.R` to the GPS sensor class.
 
 Now you have all the pieces necessary to run the Kalman Filter alongside your simulator!
 
@@ -176,6 +212,8 @@ Just like the prediction step, we will call `KalmanFilter.update()` in the main 
 
 Now when you plot the results of the filter compared to the ground truth, you should see that the Kalman Filter's estimated trajectory is much closer to reality! Generally speaking, in Kalman Filtering, uncertainty grows in the prediction step and shrinks during the update step. Following this, it makes sense that our unbounded error accumulation has been corrected now that we are encorporating updates.
 
+**Implementation Action**: Incorporate your Kalman filter into `main.py` and adding logging/visualization peripherals for examining the utility of your filter.
+
 ## 4 Looking Ahead To The Extended Kalman Filter
 
-This concludes the implementation of a basic Kalman Filter. The second half of this assignment, we will modify this code to implement the Extended Kalman Filter. We'll modify our control inputs and add in updates from the landmark pinger sensor, both of which will require linearization. Then, we'll compare the results of the EKF to the results from the basic Kalman Filter!
+This concludes the implementation of a basic Kalman Filter. In the second half of this assignment, we will modify this code to implement the Extended Kalman Filter. We'll modify our control inputs and add in updates from the landmark pinger sensor, both of which will require linearization. Then, we'll compare the results of the EKF to the results from the basic Kalman Filter!
