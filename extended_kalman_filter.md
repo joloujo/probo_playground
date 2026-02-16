@@ -116,6 +116,9 @@ Next, we need to define our state transition model. Until now, the implementatio
 
 To do so, we are going to utilize [the Sympy library,](https://docs.sympy.org/latest/tutorials/intro-tutorial/matrices.html) which makes it simple to create and evaluate symbolic expressions. The library has been imported for you at the top of the file, as well as a set of symbols we'll be using (in particular, the state space and control space variables). You can reference these variables like any other variables, but they do not hold numerical data unless you explicitly substitute in values.
 
+> Coding tip: To install Sympy on your computer, run the following in your terminal:
+> `pip install sympy`
+
 To start off, let's look at `self.f_xu`. This matrix will store the nonlinear equations used to transition from one state to the next. As you know from implementing `robot_step_differential()`, our equations of motion look like this:
 
 $$x_{t+1} = x_t + v_t*cos(\theta_t)*dt$$
