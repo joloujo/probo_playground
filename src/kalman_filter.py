@@ -51,7 +51,6 @@ class KalmanFilter:
         # TODO: define the process noise
         self.Q: np.ndarray = None
 
-
     def predict(self, u: np.ndarray):
         """
         Predicts the next state vector and its covariance matrix using the state transition matrix and an input control vector. The Kalman Filter uses the following predict equations:

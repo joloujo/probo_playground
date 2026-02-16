@@ -5,6 +5,7 @@ Main file for running the simulator.
 from environment import Environment
 from robot import Robot
 from kalman_filter import KalmanFilter
+from extended_kalman_filter import ExtendedKalmanFilter
 from utils import Position, Pose, Landmark, Bounds
 
 if __name__ == "__main__":
@@ -27,11 +28,19 @@ if __name__ == "__main__":
     # set up the robot
     robot = Robot(env)
 
-    # set up the Kalman Filter
-    kf = KalmanFilter(
-        dt,
-        initial_robot_pose,
-    )
+    # set up the (Extended) Kalman Filter
+    LINEAR = True
+    if LINEAR:
+        kf = KalmanFilter(
+            dt,
+            initial_robot_pose,
+        )
+    else:
+        # set up the Extended Kalman Filter
+        kf = ExtendedKalmanFilter(
+            dt,
+            initial_robot_pose,
+        )
 
     # set up timekeeping
     # TODO: set the total_seconds variable to however long you want the simulator to run (not real-time!)
@@ -57,13 +66,20 @@ if __name__ == "__main__":
 
             # TODO: take sensor measurements and add it to the history
 
-            # TODO: call the Kalman Filter prediction step
+            if LINEAR:
+                # TODO: call the Kalman Filter prediction step
 
-            # TODO: call the Kalman Filter update step if new sensor data is available
+                # TODO: call the Kalman Filter update step if new sensor data is available
+                pass
+            else:
+                # TODO: call the Extended Kalman Filter prediction step
+
+                # TODO: call the Extended Kalman Filter update step if new sensor data is available, for each GPS reading and for each landmark ping
+                pass
 
             # TODO: retrieve the next motor command from the input file
 
-            # TODO: execute the motor command
+            # TODO: execute the motor command)
 
     # at the end, write the histories into output files
     with open(output_ground_truth_filepath, "w") as gt_data:

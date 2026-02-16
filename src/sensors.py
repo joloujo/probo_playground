@@ -11,6 +11,12 @@ Proprioceptive sensors measure the robot's relationship to its past states. This
 from abc import ABC, abstractmethod
 from math import pi
 
+import numpy as np
+
+import sympy
+from sympy.abc import x, y, k, j, theta
+from sympy import symbols, Matrix, Symbol, pprint
+
 
 class SensorInterface(ABC):
     """
@@ -157,12 +163,94 @@ class LandmarkPinger(SensorInterface):
         self.RANGE_PROP_NOISE = None
         self.BEARING_NOISE = None  # radians
 
+        # TODO: define the nonlinear measurement model symbolically
+        self.h_x: Matrix = Matrix(
+            [
+                [None],  # calculation of r (range)
+                [None],  # calculation of phi (bearing)
+            ]
+        )
+
+        # TODO: define the Jacobian of h(x) symbolically
+        self.H: Matrix = None
+
+        self.subs: dict[Symbol, float] = {
+            x: 0.0,
+            y: 0.0,
+            theta: 0.0,
+            k: 0.0,
+            j: 0.0,
+        }
+
     def sample(self):
         """
         Reports noisy measurements of the bearing and range between the robot and all nearby landmarks.
         """
         # TODO: fill in the function
         pass
+
+    def R(self, z):
+        """
+        Estimate variance of a given pinger measurement.
+
+        Args:
+            z (ndarray): pinger observation [[range 0], [0 bearing]]
+
+        Returns:
+            Sensor noise model for pinger measurement
+        """
+        bearing_stdev = self.BEARING_NOISE
+        range_stdev = self.RANGE_NOISE + z[0] * self.RANGE_PROP_NOISE
+        return np.diag([range_stdev, bearing_stdev]) ** 2
+
+    def H_eval(self, x, lm_id):
+        """
+        Evaluate the Jacobian of h(x) at x, which reshapes a state vector to be in the observation space. This matrix is used to turn a state prediction into an observation prediction for a specific landmark.
+
+        Args:
+            x: the current state vector, to linearize with respect to
+            lm_id: the ID of the landmark that we are predicting an observation of
+        """
+        # TODO: find the x and y position of the given landmark
+        lm_x = None
+        lm_y = None
+
+        # TODO: set the value of each symbolic substitution to the actual numerical value that was passed in
+        self.subs[x] = None
+        self.subs[y] = None
+        self.subs[theta] = None
+        self.subs[j] = None  # note: we use j for landmark x position
+        self.subs[k] = None  # note: we use k for landmark y position
+
+        # TODO: evaluate the Jacobian at the subs values and convert it to a numpy array
+        H_eval = None
+
+        # return
+        return H_eval
+
+    def y(self, z, x, lm_id):
+        """
+        Calculate the residual between an observation x and a predicted observation derived from a predicted state. The predicted observation is in reference to a specified landmark.
+        """
+        # TODO: find the x and y position of the given landmark
+        lm_x = None
+        lm_y = None
+
+        # TODO: set the value of each symbolic substitution to the actual numerical value that was passed in
+        self.subs[x] = None
+        self.subs[y] = None
+        self.subs[theta] = None
+        self.subs[j] = None  # note: we use j for landmark x position
+        self.subs[k] = None  # note: we use k for landmark y position
+
+        # TODO: evaluate the measurement model at the subs values and convert it to a numpy array
+        hx_eval = None
+
+        # TODO: calculate the residual
+        y = None
+
+        # return
+        return y
 
 
 class GPS(SensorInterface):
