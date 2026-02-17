@@ -121,15 +121,23 @@ To do so, we are going to utilize [the Sympy library,](https://docs.sympy.org/la
 
 To start off, let's look at `self.f_xu`. This matrix will store the nonlinear equations used to transition from one state to the next. As you know from implementing `robot_step_differential()`, our equations of motion look like this:
 
-$$x_{t+1} = x_t + v_t*cos(\theta_t)*dt$$
-$$y_{t+1} = y_t + v_t*sin(\theta_t)*dt$$
-$$\theta_{t+1} = \theta_t + \omega_t*dt$$
+$$
+x_{t+1} = x_t + v_t*cos(\theta_t) *dt
+$$
+
+$$
+y_{t+1} = y_t + v_t*sin(\theta_t) *dt
+$$
+
+$$
+\theta_{t+1} = \theta_t + \omega_t *dt
+$$
 
 Go ahead and write these equations programatically using the symbolic variables that have been imported for you. Note that each row of the matrix corresponds to a different state variable!
 
 **Implementation Action**: Initialize `self.f_xu`, the nonlinear state transition model, as a symbolic matrix. Use the provided equations of motion above, as well as the imported symbolic variables.
 
-It's nice that we have this equation, but it's currently unusable in any of the standard Kalman Filter equations thanks to its linearity. To linearize it, we need the [Jacobian matrix](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant). The Jacobian matrix is essentially a set of partial derivatives for a given multivariable function. It also represents a high-quality linear approximation of its source function at a specific point.
+It's nice that we have this equation, but it's currently unusable in any of the standard Kalman Filter equations thanks to its nonlinearity. To linearize it, we need the [Jacobian matrix](https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant). The Jacobian matrix is essentially a set of partial derivatives for a given multivariable function. It also represents a high-quality linear approximation of its source function at a specific point.
 
 Knowing this, let's define `self.F`, the Jacobian of `self.f_xu` with respect to x, the state vector. We will do this by calling the [Sympy jacobian() function](https://docs.sympy.org/latest/modules/matrices/matrices.html#sympy.matrices.matrixbase.MatrixBase.jacobian) on `self.f_xu`, with the input to the function being a list of all variables in the state vector.
 
@@ -241,12 +249,13 @@ Now we'll want to hook up the update function to actual measurements taken by th
 
 Let's take a look at the `LandmarkPinger` class. Just like in the predict step, we'll need to define our nonlinear measurement model `self.h_x` using Sympy. Recall the nonlinear relationship between our state space and our observation space:
 
-$$r = \sqrt(j - x)^2 + (k - y)^2$$
+$$r = \sqrt{(j - x)^2 + (k - y)^2}$$
+
 $$\phi = tan^{-1}((j - x)/(k - y))$$
 
 Note that $j$ and $k$ represent the x position and y position of the landmark we are observing, respectively.
 
-Also just like in the predict step, we'll want to utilize Sympy's `jacobian()` function to find `self.H`, the Jacobian matrix with respect to the state space, symbolically.
+Also, just like in the predict step, we'll want to utilize Sympy's `jacobian()` function to find `self.H`, the Jacobian matrix with respect to the state space, symbolically.
 
 **Implementation action:** Initialize `self.h_x` as a symbolic matrix using the given equations for range and bearing. Initialize `self.H` as a symbolic matrix by calling `self.h_x.jacobian()` and using `Matrix([x, y, theta])` as an input.
 
@@ -262,7 +271,7 @@ Finally, let's consider `R`, the measurement noise model. This is just like in t
 
 Now you have all the pieces necessary to run the Extended Kalman Filter alongside your simulator!
 
-### 3.3 Demonstrating The Full Kalman Filter
+### 3.3 Demonstrating The Full Extended Kalman Filter
 
 > File: `src/main.py`
 
@@ -272,7 +281,7 @@ The landmark pinger is a little more complicated, since it makes several observa
 
 Now you should be able to run the simulator with an Extended Kalman Filter estimating your robot's ground truth trajectory!
 
-**Implementation Action**: Incorporate your Kalman filter into `main.py` and adding logging/visualization peripherals for examining the utility of your filter.
+**Implementation Action**: Incorporate your Extended Kalman filter into `main.py` and adding logging/visualization peripherals for examining the utility of your filter.
 
 ## 4 Evaluating the EKF In Several Situations
 
