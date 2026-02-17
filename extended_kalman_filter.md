@@ -74,7 +74,7 @@ We also considered another option for a control input vector, which had a nonlin
 
 $$u = [v, \omega]$$
 
-Since we'd like to explore the Extended Kalman Filter in this part of the assignment, we'll use this control input vector to move our robot. The function that executes
+Since we'd like to explore the Extended Kalman Filter in this part of the assignment, we'll use this new control input vector to move our robot. The function that executes the given control schema is `robot_step_differential()`. You may have already implemented this in your base simulator, but if not, the guide for the function is in `simulator.md`. Essentially, `robot_step_differential()` should take in a linear velocity command and an angular velocity command as inputs, and output the expected change in state (dx, dy, and dtheta) given those commands.
 
 **Implementation Action:** If you chose to implement `robot_step_differential()`, go ahead and skip this step. If not, go back and add it to your `src/robot.py` file!
 
