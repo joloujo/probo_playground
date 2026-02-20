@@ -1,0 +1,5 @@
+time,linear_velocity,angular_velocity
+0.5,2,0
+2,2,2
+2.8,2,0
+3.3,3,-1

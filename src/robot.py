@@ -1,269 +1,120 @@
-""" """
+"""
+A simulated robotic agent with teleoperation and sensing capabilities.
 
-from utils import NEAR_ZERO, floating_mod_zero, SEED
+The Robot class models the robotic agent that explores the world. The robot is remote-controlled by angular and linear velocity commands read from an external file. The robot can execute motor commands to move, and can sense both externally (GPS, landmarks, obstacles) and internally (odometry, IMU).
+"""
+
 from environment import Environment
-from sensors import SensorInterface, LandmarkPinger, GPS, Odometry
-
-import math
-import random
+from math import sin, cos
 import pandas as pd
+from random import gauss
+from sensors import SensorInterface, WheelEncoder, LandmarkPinger
 
 
 class Robot:
     """
-    The Robot class represents a mobile robotic agent. It can execute linear and angular velocity commands to move in the world. It can also noisily sense its environment with a variety of sensors.
+    A class that models a simulated robotic agent.
 
     Attributes:
-        env (Environment): the environment this robot is operating in
-        cmd_lin_vel (float): most recent linear velocity command
-        cmd_ang_vel (float): most recent angular velocity command
-        actual_lin_vel (float): most recent executed linear velocity
-        actual_ang_vel (float): most recent executed angular velocity
-        sensors (list[SensorInterface]): list of all robot sensors
+        env: the environment this robot is operating in
+        sensors: list of all robot sensors
     """
 
-    def __init__(
-        self,
-        env: Environment,
-        robot_info: dict,
-        sensor_info: dict,
-    ):
+    def __init__(self, env: Environment, lin_vel_noise: float = 0, ang_vel_noise: float = 0):
         """
         Initialize an instance of the Robot class.
+
+        Args:
+            env: the environment this robot is operating in
+            lin_vel_noise: the proportion of the command linear velocity to use for the standard deviation of the gaussian noise applied to the command linear velocity 
+            ang_vel_noise: the proportion of the command angular velocity to use for the standard deviation of the gaussian noise applied to the command angular velocity 
         """
         self.env = env
-        # commands from controller
-        self.cmd_lin_vel = 0.0  # m/s
-        self.cmd_ang_vel = 0.0  # rad/s
-        # noisy execution of controller commands
-        self.actual_lin_vel = 0.0  # m/s
-        self.actual_ang_vel = 0.0  # rad/s
 
-        # physical properties
-        mtr_info = robot_info["MotorCommands"]
-        self.EXECUTION_NOISE_LINEAR = mtr_info["linear_noise"]
-        self.EXECUTION_NOISE_ANGULAR = mtr_info["angular_noise"]
+        self.lin_vel_noise = lin_vel_noise
+        self.ang_vel_noise = ang_vel_noise
 
-        # unpack sensor info
-        gps_info = sensor_info["GPS"]
-        lmp_info = sensor_info["LandmarkPinger"]
-        odom_info = sensor_info["Odometry"]
-        self.sensors: dict[str, SensorInterface] = {
-            "GPS": GPS(
-                robot=self,
-                name="GPS",
-                interval=gps_info["interval"],
-                x_noise=gps_info["x_noise"],
-                y_noise=gps_info["y_noise"],
-            ),
-            "LandmarkPinger": LandmarkPinger(
-                robot=self,
-                name="LandmarkPinger",
-                interval=lmp_info["interval"],
-                max_range=env.lm_range,
-                range_noise=lmp_info["range_noise_const"],
-                range_prop_noise=lmp_info["range_noise_prop"],
-                bearing_noise=lmp_info["bearing_noise_const"],
-                bearing_prop_noise=lmp_info["bearing_noise_prop"],
-            ),
-            "Odometry": Odometry(
-                robot=self,
-                name="Odometry",
-                interval=odom_info["interval"],
-                lin_noise=odom_info["linear_noise_const"],
-                linear_noise_ratio=odom_info["linear_noise_prop"],
-                ang_noise=odom_info["angular_noise_const"],
-                angular_noise_ratio=odom_info["angular_noise_prop"],
-            ),
-        }
+        self.cmd_lin_vel: float = 0
+        self.cmd_ang_vel: float = 0
 
-    # --- Controller Methods ---
-    def agent_step_differential(self, lin_vel: float, ang_vel: float):
+        self.actual_lin_vel: float = 0
+        self.actual_ang_vel: float = 0
+
+        self.sensors: list[SensorInterface] = [
+            WheelEncoder(self),
+            LandmarkPinger(self),
+        ]
+
+    def robot_step_differential(self, lin_vel: float, ang_vel: float) -> tuple[float, float, float]:
         """
-        Differential-drive mode. Given linear and angular velocities, update the position and heading of the agent in the environment.
+        Differential-drive mode. Given forward linear and angular velocities, determine the robot's change in x, y, and heading and apply those changes in the environment.
+
+        Args:
+            lin_vel: input linear velocity command
+            ang_vel: input angular velocity command
 
         Returns:
-            the new position and heading of the agent
+            dx: change in x position
+            dy: change in y position
+            d-theta: change in heading
         """
-        # pocket the cmds
+
         self.cmd_lin_vel = lin_vel
         self.cmd_ang_vel = ang_vel
 
-        # noisify the execution proportionally
-        lin_vel = lin_vel * (1 + random.gauss(0, self.EXECUTION_NOISE_LINEAR))
-        ang_vel = ang_vel * (1 + random.gauss(0, self.EXECUTION_NOISE_ANGULAR))
+        noisy_lin_vel = gauss(lin_vel, lin_vel * self.lin_vel_noise)
+        noisy_ang_vel = gauss(ang_vel, ang_vel * self.ang_vel_noise)
 
-        # pocket the actual
-        self.actual_lin_vel = lin_vel
-        self.actual_ang_vel = ang_vel
+        self.actual_lin_vel = noisy_lin_vel
+        self.actual_ang_vel = noisy_ang_vel
 
-        # linear only; drive in a straight line
-        if abs(ang_vel) < NEAR_ZERO:
-            dx = lin_vel * self.env.DT * math.cos(self.env.agent_pose.theta)
-            dy = lin_vel * self.env.DT * math.sin(self.env.agent_pose.theta)
-            dtheta = 0.0
-        # linear and angular; drive in an arc
+        if noisy_ang_vel == 0: 
+            return (
+                noisy_lin_vel * cos(self.env.robot_pose.theta) * self.env.DT,
+                noisy_lin_vel * sin(self.env.robot_pose.theta) * self.env.DT,
+                0
+            )
+        elif noisy_lin_vel == 0: # Not strictly necessary, but should improve performance slightly
+            return (
+                0,
+                0,
+                noisy_ang_vel * self.env.DT
+            )
         else:
-            r = lin_vel / ang_vel
-            dtheta = ang_vel * self.env.DT
-            dx = r * (
-                math.sin(self.env.agent_pose.theta + dtheta)
-                - math.sin(self.env.agent_pose.theta)
-            )
-            dy = -r * (
-                math.cos(self.env.agent_pose.theta + dtheta)
-                - math.cos(self.env.agent_pose.theta)
+            return (
+                (noisy_lin_vel / noisy_ang_vel) * (sin(self.env.robot_pose.theta + noisy_ang_vel * self.env.DT) - sin(self.env.robot_pose.theta)),
+                -(noisy_lin_vel / noisy_ang_vel) * (cos(self.env.robot_pose.theta + noisy_ang_vel * self.env.DT) - cos(self.env.robot_pose.theta)),
+                noisy_ang_vel * self.env.DT
             )
 
-        # pass deltas to the env
-        self.env.robot_step(dx, dy, dtheta)
-
-    def agent_step_translational(self, x_vel: float, y_vel: float):
+    def robot_step_translational(self, x_vel: float, y_vel: float, ang_vel: float):
         """
-        Swerve-drive mode. Given x and y velocities, update the position and heading of the agent in the environment.
+        Swerve-drive mode. Given x, y, and angular velocities, determine the robot's change in x, y, and heading and apply those changes in the environment.
+
+        Args:
+            x_vel: input x velocity command
+            y_vel: input y velocity command
+            ang_vel: input angular velocity command
 
         Returns:
-            the new position and heading of the agent
+            dx: change in x position
+            dy: change in y position
+            d-theta: change in heading
         """
-        # build the new pose before validating it
-        dx = x_vel * self.env.DT
-        dy = y_vel * self.env.DT
+        # TODO: fill in the function
+        pass
 
-        # pass deltas to env
-        self.env.robot_step(dx, dy, 0.0)
-
-    # --- Sensing Methods ---
-    def take_sensor_measurements(self) -> pd.DataFrame:
-        # start with env time
-        measurements = pd.DataFrame({"Time": [self.env.time]})
-
-        # query all sensors -- won't have all columns every time
-        for s in self.sensors.values():
-            if floating_mod_zero(self.env.time, s.interval):
-                # print(f"--> Collecting from {s.name}")
-                measurements = pd.merge(
-                    measurements,
-                    s.sample(),
-                    left_index=True,
-                    right_index=True,
-                )
-
-        # also grab the command velocities
-        measurements["CMD_LinearVelocity"] = [self.cmd_lin_vel]
-        measurements["CMD_AngularVelocity"] = [self.cmd_ang_vel]
-
-        # return
-        return measurements
-
-    def take_gt_snapshot(self) -> pd.DataFrame:
+    def take_sensor_measurements(self):
         """
-        Return timestep-specific GT data for CSV logging.
+        Return noisy sensor readings of the environment at this timestep, including data from all sensors, in a table format.
         """
-        # grab env data: time, robot pose, gt to landmarks
-        env_data = self.env.take_gt_snapshot()
+        
+        samples = {
+            sensor.name: [sensor.sample()]
+            for sensor in self.sensors
+            if self.env.time >= sensor.last_meas_t + sensor.interval 
+        }
 
-        # add in actual, imperfect velocity commands
-        env_data["Actual_LinearVelocity"] = self.actual_lin_vel
-        env_data["Actual_AngularVelocity"] = self.actual_ang_vel
+        return pd.DataFrame(samples)
 
-        # print("--> Ground Truth Data")
-        # print(env_data.columns)
-        # print(env_data.values)
-        return env_data
 
-    def info(self) -> pd.DataFrame:
-        """
-        Return a dictionary of frozen environment information.
-        """
-        # set up the table
-        columns = ["Sensor Name", "Constant Noise", "Proportional Noise"]
-        data = []
-
-        # start with controller
-        name = "MotorController"
-        # linear
-        lin_row = pd.DataFrame(
-            0,
-            index=pd.RangeIndex(1),
-            columns=columns,
-        )
-        lin_row["Sensor Name"] = name + f"Linear"
-        lin_row["Constant Noise"] = self.EXECUTION_NOISE_LINEAR
-        data.append(lin_row)
-        # angular
-        ang_row = pd.DataFrame(
-            0,
-            index=pd.RangeIndex(1),
-            columns=columns,
-        )
-        ang_row["Sensor Name"] = name + f"Angular"
-        ang_row["Constant Noise"] = self.EXECUTION_NOISE_ANGULAR
-        data.append(ang_row)
-        # iterate through sensors
-        for name, sensor in self.sensors.items():
-            # GPS has x noise and y noise
-            if isinstance(sensor, GPS):
-                # x
-                row = pd.DataFrame(
-                    0,
-                    index=pd.RangeIndex(1),
-                    columns=columns,
-                )
-                row["Sensor Name"] = name + "X"
-                row["Constant Noise"] = sensor.X_NOISE
-                data.append(row)
-                # y
-                row = pd.DataFrame(
-                    0,
-                    index=pd.RangeIndex(1),
-                    columns=columns,
-                )
-                row["Sensor Name"] = name + "Y"
-                row["Constant Noise"] = sensor.Y_NOISE
-                data.append(row)
-            # odom has linear and angular components to consider
-            elif isinstance(sensor, Odometry):
-                # linear
-                lin_row = pd.DataFrame(
-                    0,
-                    index=pd.RangeIndex(1),
-                    columns=columns,
-                )
-                lin_row["Sensor Name"] = name + f"Linear"
-                lin_row["Constant Noise"] = sensor.LIN_NOISE
-                lin_row["Proportional Noise"] = sensor.LINEAR_NOISE_RATIO
-                data.append(lin_row)
-                # angular
-                ang_row = pd.DataFrame(
-                    0,
-                    index=pd.RangeIndex(1),
-                    columns=columns,
-                )
-                ang_row["Sensor Name"] = name + f"Angular"
-                lin_row["Constant Noise"] = sensor.ANG_NOISE
-                ang_row["Proportional Noise"] = sensor.ANGULAR_NOISE_RATIO
-                data.append(ang_row)
-            # pinger has independent range and bearing
-            elif isinstance(sensor, LandmarkPinger):
-                # linear
-                range_row = pd.DataFrame(
-                    0,
-                    index=pd.RangeIndex(1),
-                    columns=columns,
-                )
-                range_row["Sensor Name"] = name + f"Range"
-                range_row["Constant Noise"] = sensor.RANGE_PROP_NOISE
-                range_row["Proportional Noise"] = sensor.RANGE_PROP_NOISE
-                data.append(range_row)
-                # angular
-                bearing_row = pd.DataFrame(
-                    0,
-                    index=pd.RangeIndex(1),
-                    columns=columns,
-                )
-                bearing_row["Sensor Name"] = name + f"Angular"
-                bearing_row["Constant Noise"] = sensor.BEARING_NOISE
-                data.append(bearing_row)
-
-        # return
-        return pd.concat(data)

@@ -1,7 +1,8 @@
 # Probabilistic Robotics Playground: 2D Mobile Robot Simulation Environment
-> **Developed by Ivy Mahncke**
+> **Developed by [your name here!]**
 > 
-> **Contributors:** Dominic Salmieri, Victoria Preston
+> **Contributors:** [anyone you worked with!]
+
 ## Repository Overview and Vision
 This repository is meant to be a starting point for creativity and self-guided learning for the _Probabilistic Robotics_ course at Olin College of Engineering, providing an initial skeleton for a mobile robot simulation environment. Assignments throughout the course will revisit this simulator: building out more of its capabilities, utilizing it to investigate particular algorithms and methods, and providing a start for deep dive projects that push the class materials even further.
 
@@ -18,15 +19,10 @@ This repository is meant to be a starting point for creativity and self-guided l
 ├── output/
 ├── requirements.txt
 ├── README.md
+├── simulator.md
 ```
 
-`src` houses the source code for this project. Here's a quick descriptor of the contents:
-- `simulator.py`: the primary runnable file of the project: unpacks input files, runs the simulator, and logs the resultant dataset
-- `environment.py`: the simulated environment; contains modular landscape features and motion kinematics
-- `robot.py`: the simulated robot; executes motion commands and logs sensor data
-- `sensors.py`: sensor models that noisily sample the environment
-- `viz.py`: tools for visualizing the dataset
-- `utils.py`: tools for structuring common data
+`src` houses the source code for this project.
 
 `input` houses example input files; particularly a config file and a commands file. there are two example files present:
 - `config_example.yaml`: used to configure the environment and sensor noise models
