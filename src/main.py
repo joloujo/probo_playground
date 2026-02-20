@@ -6,12 +6,9 @@ import csv
 from environment import Environment
 from pathlib import Path
 from robot import Robot
-<<<<<<< HEAD
 from kalman_filter import KalmanFilter
 from extended_kalman_filter import ExtendedKalmanFilter
-=======
 import pandas as pd
->>>>>>> main
 from utils import Position, Pose, Landmark, Bounds
 
 if __name__ == "__main__":
@@ -62,25 +59,15 @@ if __name__ == "__main__":
     total_timesteps = total_seconds / env.DT
 
     # set up logging
-<<<<<<< HEAD
-    ground_truth_history = []
-    sensor_data_history = []
-    kalman_filter_history = []
-
-    # set up input filepath and output filepaths
-    input_commands_filepath = ""
-    output_ground_truth_filepath = ""
-    output_sensor_data_filepath = ""
-    output_kalman_filter_filepath = ""
-=======
     ground_truth_history = pd.DataFrame()
     sensor_data_history = pd.DataFrame()
+    kalman_filter_history = []
 
     # set up input filepath and output filepaths
     input_commands_filepath = Path('./input/cmd_vel.csv')
     output_ground_truth_filepath = Path('./output/ground_truth.csv')
     output_sensor_data_filepath = Path('./output/sensor_data.csv')
->>>>>>> main
+    output_kalman_filter_filepath = ""
 
     # open up the instructions, pop the first
     with open(input_commands_filepath, "r") as input_commands_file:
@@ -104,7 +91,6 @@ if __name__ == "__main__":
             # Take sensor measurements and add it to the history
             sensor_data_history = pd.concat([sensor_data_history, robot.take_sensor_measurements()], axis=0, ignore_index=True)
 
-<<<<<<< HEAD
             if LINEAR:
                 # TODO: call the Kalman Filter prediction step
 
@@ -116,10 +102,6 @@ if __name__ == "__main__":
                 # TODO: call the Extended Kalman Filter update step if new sensor data is available, for each GPS reading and for each landmark ping
                 pass
 
-            # TODO: retrieve the next motor command from the input file
-
-            # TODO: execute the motor command)
-=======
             # Retrieve the next motor command from the input file
             if next_command is not None and float(next_command[0]) <= env.time:
                 lin_vel = float(next_command[1])
@@ -129,18 +111,14 @@ if __name__ == "__main__":
 
             # Execute the motor command
             env.robot_step(*robot.robot_step_differential(lin_vel, ang_vel))
->>>>>>> main
 
     # at the end, write the histories into output files
     with open(output_ground_truth_filepath, "w") as gt_data:
         ground_truth_history.to_csv(gt_data)
 
     with open(output_sensor_data_filepath, "w") as sensor_data:
-<<<<<<< HEAD
-        # TODO: write sensor_data_history to a file
+        sensor_data_history.to_csv(sensor_data)
 
     with open(output_kalman_filter_filepath, "w") as kf_data:
         # TODO: write kalman_filter_history to a file
-=======
-        sensor_data_history.to_csv(sensor_data)
->>>>>>> main
+        pass
