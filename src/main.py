@@ -6,9 +6,10 @@ import csv
 from environment import Environment
 from pathlib import Path
 from robot import Robot
-from kalman_filter import KalmanFilter
-from extended_kalman_filter import ExtendedKalmanFilter
+# from kalman_filter import KalmanFilter
+# from extended_kalman_filter import ExtendedKalmanFilter
 import pandas as pd
+from viz import Visualizer, PlotDataOptions
 from utils import Position, Pose, Landmark, Bounds
 
 if __name__ == "__main__":
@@ -41,18 +42,18 @@ if __name__ == "__main__":
     robot = Robot(env)
 
     # set up the (Extended) Kalman Filter
-    LINEAR = True
-    if LINEAR:
-        kf = KalmanFilter(
-            dt,
-            initial_robot_pose,
-        )
-    else:
-        # set up the Extended Kalman Filter
-        kf = ExtendedKalmanFilter(
-            dt,
-            initial_robot_pose,
-        )
+    # LINEAR = True
+    # if LINEAR:
+    #     kf = KalmanFilter(
+    #         dt,
+    #         initial_robot_pose,
+    #     )
+    # else:
+    #     # set up the Extended Kalman Filter
+    #     kf = ExtendedKalmanFilter(
+    #         dt,
+    #         initial_robot_pose,
+    #     )
 
     # set up timekeeping
     total_seconds = 10
@@ -85,22 +86,21 @@ if __name__ == "__main__":
         # iterate through each timestep
         for step in range(int(total_timesteps) + 1):
             # Take a ground truth snapshot and add it to the history
-            print(env.take_state_snapshot())
             ground_truth_history = pd.concat([ground_truth_history, env.take_state_snapshot()], axis=0, ignore_index=True)
 
             # Take sensor measurements and add it to the history
             sensor_data_history = pd.concat([sensor_data_history, robot.take_sensor_measurements()], axis=0, ignore_index=True)
 
-            if LINEAR:
-                # TODO: call the Kalman Filter prediction step
+            # if LINEAR:
+            #     # TODO: call the Kalman Filter prediction step
 
-                # TODO: call the Kalman Filter update step if new sensor data is available
-                pass
-            else:
-                # TODO: call the Extended Kalman Filter prediction step
+            #     # TODO: call the Kalman Filter update step if new sensor data is available
+            #     pass
+            # else:
+            #     # TODO: call the Extended Kalman Filter prediction step
 
-                # TODO: call the Extended Kalman Filter update step if new sensor data is available, for each GPS reading and for each landmark ping
-                pass
+            #     # TODO: call the Extended Kalman Filter update step if new sensor data is available, for each GPS reading and for each landmark ping
+            #     pass
 
             # Retrieve the next motor command from the input file
             if next_command is not None and float(next_command[0]) <= env.time:
@@ -119,6 +119,9 @@ if __name__ == "__main__":
     with open(output_sensor_data_filepath, "w") as sensor_data:
         sensor_data_history.to_csv(sensor_data)
 
-    with open(output_kalman_filter_filepath, "w") as kf_data:
-        # TODO: write kalman_filter_history to a file
-        pass
+    # with open(output_kalman_filter_filepath, "w") as kf_data:
+    #     # TODO: write kalman_filter_history to a file
+    #     pass
+
+    viz = Visualizer(env, robot)
+    viz.plot_data(ground_truth_history, sensor_data_history)

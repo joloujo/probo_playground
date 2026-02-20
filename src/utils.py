@@ -51,6 +51,9 @@ class Position:
     @property
     def angle(self) -> float:
         return atan2(self.y, self.x)
+    
+    def copy(self) -> 'Position':
+        return Position(self.x, self.y)
 
 
 @dataclass(unsafe_hash=True)
@@ -76,6 +79,9 @@ class Pose:
         Return in string format.
         """
         return self.pos.to_string() + f"T{self.theta}"
+    
+    def copy(self) -> 'Pose':
+        return Pose(self.pos.copy(), self.theta)
 
 
 @dataclass(frozen=True)

@@ -19,9 +19,9 @@ if TYPE_CHECKING:
 
 import numpy as np
 
-import sympy
-from sympy.abc import x, y, k, j, theta
-from sympy import symbols, Matrix, Symbol, pprint
+# import sympy
+# from sympy.abc import x, y, k, j, theta
+# from sympy import symbols, Matrix, Symbol, pprint
 
 
 class SensorInterface(ABC):
@@ -178,23 +178,23 @@ class LandmarkPinger(SensorInterface):
         self.BEARING_NOISE = bearing_noise  # radians
 
         # TODO: define the nonlinear measurement model symbolically
-        self.h_x: Matrix = Matrix(
-            [
-                [None],  # calculation of r (range)
-                [None],  # calculation of phi (bearing)
-            ]
-        )
+        # self.h_x: Matrix = Matrix(
+        #     [
+        #         [None],  # calculation of r (range)
+        #         [None],  # calculation of phi (bearing)
+        #     ]
+        # )
 
         # TODO: define the Jacobian of h(x) symbolically
-        self.H: Matrix = None
+        # self.H: Matrix = None
 
-        self.subs: dict[Symbol, float] = {
-            x: 0.0,
-            y: 0.0,
-            theta: 0.0,
-            k: 0.0,
-            j: 0.0,
-        }
+        # self.subs: dict[Symbol, float] = {
+        #     x: 0.0,
+        #     y: 0.0,
+        #     theta: 0.0,
+        #     k: 0.0,
+        #     j: 0.0,
+        # }
 
     def sample(self):
         """
@@ -254,11 +254,11 @@ class LandmarkPinger(SensorInterface):
         lm_y = None
 
         # TODO: set the value of each symbolic substitution to the actual numerical value that was passed in
-        self.subs[x] = None
-        self.subs[y] = None
-        self.subs[theta] = None
-        self.subs[j] = None  # note: we use j for landmark x position
-        self.subs[k] = None  # note: we use k for landmark y position
+        # self.subs[x] = None
+        # self.subs[y] = None
+        # self.subs[theta] = None
+        # self.subs[j] = None  # note: we use j for landmark x position
+        # self.subs[k] = None  # note: we use k for landmark y position
 
         # TODO: evaluate the Jacobian at the subs values and convert it to a numpy array
         H_eval = None
@@ -275,11 +275,11 @@ class LandmarkPinger(SensorInterface):
         lm_y = None
 
         # TODO: set the value of each symbolic substitution to the actual numerical value that was passed in
-        self.subs[x] = None
-        self.subs[y] = None
-        self.subs[theta] = None
-        self.subs[j] = None  # note: we use j for landmark x position
-        self.subs[k] = None  # note: we use k for landmark y position
+        # self.subs[x] = None
+        # self.subs[y] = None
+        # self.subs[theta] = None
+        # self.subs[j] = None  # note: we use j for landmark x position
+        # self.subs[k] = None  # note: we use k for landmark y position
 
         # TODO: evaluate the measurement model at the subs values and convert it to a numpy array
         hx_eval = None

@@ -9,7 +9,7 @@ from math import sin, cos
 import pandas as pd
 from random import gauss
 from sensors import SensorInterface, WheelEncoder, LandmarkPinger
-
+from utils import Pose
 
 class Robot:
     """
@@ -45,11 +45,12 @@ class Robot:
             LandmarkPinger(self),
         ]
 
-    def robot_step_differential(self, lin_vel: float, ang_vel: float) -> tuple[float, float, float]:
+    def robot_step_differential_from_arbitrary_pose(self, start: Pose, lin_vel: float, ang_vel: float):
         """
-        Differential-drive mode. Given forward linear and angular velocities, determine the robot's change in x, y, and heading and apply those changes in the environment.
+        Given a starting pose and forward linear and angular velocities, determine the robot's change in x, y, and heading.
 
         Args:
+            start: the pose of the robot before the movement step
             lin_vel: input linear velocity command
             ang_vel: input angular velocity command
 
@@ -70,8 +71,8 @@ class Robot:
 
         if noisy_ang_vel == 0: 
             return (
-                noisy_lin_vel * cos(self.env.robot_pose.theta) * self.env.DT,
-                noisy_lin_vel * sin(self.env.robot_pose.theta) * self.env.DT,
+                noisy_lin_vel * cos(start.theta) * self.env.DT,
+                noisy_lin_vel * sin(start.theta) * self.env.DT,
                 0
             )
         elif noisy_lin_vel == 0: # Not strictly necessary, but should improve performance slightly
@@ -82,10 +83,26 @@ class Robot:
             )
         else:
             return (
-                (noisy_lin_vel / noisy_ang_vel) * (sin(self.env.robot_pose.theta + noisy_ang_vel * self.env.DT) - sin(self.env.robot_pose.theta)),
-                -(noisy_lin_vel / noisy_ang_vel) * (cos(self.env.robot_pose.theta + noisy_ang_vel * self.env.DT) - cos(self.env.robot_pose.theta)),
+                (noisy_lin_vel / noisy_ang_vel) * (sin(start.theta + noisy_ang_vel * self.env.DT) - sin(start.theta)),
+                -(noisy_lin_vel / noisy_ang_vel) * (cos(start.theta + noisy_ang_vel * self.env.DT) - cos(start.theta)),
                 noisy_ang_vel * self.env.DT
-            )
+            )        
+
+    def robot_step_differential(self, lin_vel: float, ang_vel: float) -> tuple[float, float, float]:
+        """
+        Differential-drive mode. Given forward linear and angular velocities, determine the robot's change in x, y, and heading.
+
+        Args:
+            lin_vel: input linear velocity command
+            ang_vel: input angular velocity command
+
+        Returns:
+            dx: change in x position
+            dy: change in y position
+            d-theta: change in heading
+        """
+
+        return self.robot_step_differential_from_arbitrary_pose(self.env.robot_pose, lin_vel, ang_vel)        
 
     def robot_step_translational(self, x_vel: float, y_vel: float, ang_vel: float):
         """

@@ -49,7 +49,8 @@ class Environment:
         self.OBSTACLES = obstacles
         self.LANDMARKS = landmarks
 
-        self.robot_pose = robot_starting_pose
+        self.robot_starting_pose = robot_starting_pose
+        self.robot_pose = robot_starting_pose.copy()
 
     def robot_step(self, dx: float, dy: float, dtheta: float) -> None:
         """
@@ -144,7 +145,7 @@ class Environment:
         """
         state: State = {
             'time': [self.time],
-            'robot_pose': [self.robot_pose],
+            'robot_pose': [self.robot_pose.copy()],
             'landmark_br': [self.get_proximity_to_landmarks()],
         }
         return pd.DataFrame(state)
