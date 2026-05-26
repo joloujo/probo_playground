@@ -8,7 +8,7 @@ from environment import Environment
 from math import sin, cos
 import pandas as pd
 from random import gauss
-from sensors import SensorInterface, WheelEncoder, LandmarkPinger
+from sensors import SensorInterface, WheelEncoderDifferential, LandmarkPinger
 from utils import Pose
 
 class Robot:
@@ -41,7 +41,7 @@ class Robot:
         self.actual_ang_vel: float = 0
 
         self.sensors: list[SensorInterface] = [
-            WheelEncoder(self),
+            WheelEncoderDifferential(self),
             LandmarkPinger(self),
         ]
 
@@ -118,8 +118,11 @@ class Robot:
             dy: change in y position
             d-theta: change in heading
         """
-        # TODO: fill in the function
-        pass
+        return (
+            x_vel * self.env.DT,
+            y_vel * self.env.DT,
+            ang_vel * self.env.DT
+        )
 
     def take_sensor_measurements(self):
         """

@@ -85,7 +85,7 @@ class SensorInterface(ABC):
         pass
 
 
-class WheelEncoder(SensorInterface):
+class WheelEncoderDifferential(SensorInterface):
     """
     This class represents a wheel encoder set that measures the robot's motor speeds.
     Reports noisy estimates of linear and angular velocities.
@@ -133,6 +133,60 @@ class WheelEncoder(SensorInterface):
         self.last_meas_t = self.robot.env.time
 
         return (
+            gauss(lin_vel, self.LIN_NOISE),
+            gauss(ang_vel, self.ANG_NOISE)
+        )
+    
+
+class WheelEncoderTranslational(SensorInterface):
+    """
+    This class represents a wheel encoder set that measures the robot's motor speeds.
+    Reports noisy estimates of x, y, and angular velocities.
+
+    Attributes:
+        name: string identifier
+        robot: reference robot
+        interval: period between measurements
+        last_meas_t: time of last measurement
+        LIN_NOISE: absolute noise for x, y velocity stdev
+        ANG_NOISE: absolute noise for angular velocity stdev
+    """
+
+    def __init__(
+        self,
+        robot,
+        name="wheel_encoder",
+        interval=0.1,
+        lin_noise=0.05,
+        ang_noise=0.03,
+    ):
+        """
+        Initialize an instance of the WheelEncoder class.
+
+        Args:
+            robot: reference robot
+            name: reference identifier
+            interval: period between measurements
+            linear_noise: absolute noise for linear velocity
+            angular_noise: absolute noise for angular
+        """
+        super().__init__(name, robot, interval)
+        # TODO: save all noise constants as properties
+        self.LIN_NOISE = lin_noise  # m/s
+        self.ANG_NOISE = ang_noise # rad/s
+
+    def sample(self) -> tuple[float, float, float]:
+        """
+        Sample the robot's linear and angular velocity.
+        """
+        # Get the most recent angular and linear velocities
+        lin_vel = self.robot.actual_lin_vel
+        ang_vel = self.robot.actual_ang_vel
+
+        self.last_meas_t = self.robot.env.time
+
+        return (
+            gauss(lin_vel, self.LIN_NOISE),
             gauss(lin_vel, self.LIN_NOISE),
             gauss(ang_vel, self.ANG_NOISE)
         )
